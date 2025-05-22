@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Object Detection Project: Phát hiện người xâm nhập vùng cấm thời gian thực
 
 Mô tả
@@ -70,3 +71,6 @@ Tinh chỉnh & Mở rộng
 Thay đổi tọa độ vùng cấm trong src/config.py.
 Chuyển sang real-time webcam: --video 0.
 Tích hợp cảnh báo âm thanh, Telegram/Zalo thông qua hàm trong utils.py
+=======
+# object-detection-project
+>>>>>>> 4f3c8b5ecfa6b61f74eaa7117e0338209e68289d
