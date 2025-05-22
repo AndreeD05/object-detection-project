@@ -61,13 +61,21 @@ git clone https://github.com/AndreeD05/object-detection-project.git
 cd object-detection-project
 
 # (Optional) Create & activate virtual environment
-python3 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 \.venv\Scripts\activate   # Windows
 
 # Install dependencies
 =======
-pip install --upgrade pip
+# Bước 1: Thêm pip vào virtualenv
+python -m ensurepip --upgrade
+
+# Bước 2: Giờ pip đã có, nâng cấp pip lên bản mới nhất
+python -m pip install --upgrade pip
+
+# Kiểm tra
+python -m pip --version
+
 pip install -r requirements.txt
 ```
 
