@@ -1,8 +1,6 @@
 <<<<<<< HEAD
 # Object Detection for Intruder Alert
 
-![Workflow](https://img.shields.io/badge/Workflow-YOLOv8-blue) ![License](https://img.shields.io/badge/License-MIT-green)
-
 > **Real-time** detection of unauthorized intruders in restricted zones using YOLOv8 and OpenCV, with automatic alerts and logging.
 =======
 **Object Detection Project: Phát hiện người xâm nhập vùng cấm thời gian thực**
@@ -11,7 +9,6 @@
 
 **Dự án này sử dụng YOLOv8 và OpenCV để phát hiện người xâm nhập vào khu vực cấm trong video và webcam theo thời gian thực, đồng thời cảnh báo và ghi log vi phạm.**
 **Cấu trúc thư mục**
->>>>>>> 2abce3a95a493c3b3b84cf388ec6bac8ed0160f2
 
 ---
 
@@ -70,20 +67,6 @@ source .venv/bin/activate  # Linux/macOS
 
 # Install dependencies
 =======
-**Yêu cầu:**
-Python 3.7+
-Virtual environment (venv) khuyến khích
-Các thư viện: ultralytics, opencv-python, numpy, playsound
-
-
-**Cài đặt**
-**1.Tạo và kích hoạt virtual environment (tùy chọn nhưng khuyến khích):**
-python -m venv .venv
-source .venv/bin/activate   # Linux/macOS
-.\.venv\Scripts\activate  # Windows
-
-**2.Cài dependencies:**
->>>>>>> 2abce3a95a493c3b3b84cf388ec6bac8ed0160f2
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -121,31 +104,6 @@ python -c "from ultralytics import YOLO; model = YOLO('yolov8n.pt'); model.train
 
 ---
 =======
-**Chuẩn bị dataset**
-
-1.Đặt toàn bộ ảnh gốc vào data/dataset/images/ và nhãn .txt vào data/dataset/labels/.
-2.Chạy hàm prepare_dataset() trong src/utils.py để tự động chia 80% train, 20% val và sinh file data.yaml:
-**python -c "from src.utils import prepare_dataset; prepare_dataset()"**
-
-**Huấn luyện model**
-Chạy lệnh sau để train bằng YOLOv8:
-python -c "from ultralytics import YOLO; model=YOLO('yolov8n.pt'); model.train(data='data/dataset/data.yaml', epochs=30, imgsz=640, batch=16, project='models', name='custom_train', exist_ok=True)"
-
-_Kết quả weights best.pt sẽ nằm trong runs/detect/custom_train/weights/, bạn nên copy về thư mục models/._
-
-**Inference & Cảnh báo**
-Dùng script src/infer.py để phát hiện trên video hoặc webcam:
-python src/infer.py --video path/to/input.mp4 --out path/to/output.mp4
-
-_Kết quả video có bounding box và polygon vùng cấm sẽ được lưu tại output.mp4._
-
-**# Video file**
-python src/infer.py --video data/test_video.mp4 --out logs/output.mp4
-
-**# Hoặc real-time từ webcam**
-python src/infer.py --video 0 --out logs/webcam_output.mp4
-Các cảnh báo, log vi phạm sẽ được ghi trong thư mục logs/.
->>>>>>> 2abce3a95a493c3b3b84cf388ec6bac8ed0160f2
 
 ## 🎥 Inference & Alerts
 
@@ -184,12 +142,10 @@ Adjust parameters in `src/config.py`:
 ---
 
 ## 📄 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 =======
 **Tinh chỉnh & Mở rộng**
 Thay đổi tọa độ vùng cấm trong src/config.py.
 Chuyển sang real-time webcam: --video 0.
 Tích hợp cảnh báo âm thanh, Telegram/Zalo thông qua hàm trong utils.py
 
->>>>>>> 2abce3a95a493c3b3b84cf388ec6bac8ed0160f2
+
