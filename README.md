@@ -104,26 +104,10 @@ pip install -r requirements.txt
 
 Train with YOLOv8:
 
-Train with YOLOv8 và config trong `src/config.py`:
+Run training using the script in `src/train.py` with configuration from `src/config.py`:
 
 ```bash
-yolo detect train \
-  model=yolov8n.pt \
-  data=data/dataset/data.yaml \
-  epochs=30 \
-  batch=16 \
-  imgsz=640 \
-  lr0=0.005 \
-  lrf=0.1 \
-  optimizer=SGD \
-  augment=True \
-  hsv_h=0.015 hsv_s=0.7 hsv_v=0.4 \
-  degrees=5.0 shear=2.0 translate=0.1 scale=0.5 flipud=0.0 fliplr=0.5 \
-  mosaic=1.0 mixup=0.2 \
-  patience=10 close_mosaic=10 \
-  project=models \
-  name=custom_train \
-  exist_ok=True
+python src/train.py
 
 - Best weights saved at `models/custom_train/weights/best.pt`.
 
