@@ -107,7 +107,8 @@ Train with YOLOv8:
 Run training using the script in `src/train.py` with configuration from `src/config.py`:
 
 ```bash
-python src/train.py
+python -m src.train
+```
 
 - Best weights saved at `models/custom_train/weights/best.pt`.
 
