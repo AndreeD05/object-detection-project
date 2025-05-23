@@ -65,6 +65,10 @@ python -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 .\.venv\Scripts\Activate.ps1  # Windows
 
+#Nếu .\.venv\Scripts\Activate.ps1
+#Mở PowerShell với quyền Administrator và thay đổi chính sách tạm thời
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
 # Install dependencies
 =======
 # Bước 1: Thêm pip vào virtualenv
