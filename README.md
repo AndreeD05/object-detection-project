@@ -125,8 +125,14 @@ python -m src.train
 Run detection on a video or webcam:
 
 ```bash
-python src/infer.py   --video path/to/input.mp4   --out logs/output.mp4
+python -m src.select_zone --video data_test/Stealing009_x264.mp4 --out zone.json
 ```
+
+Sau khi xác nhận zone.json đúng, bạn chạy:
+```bash
+python -m src.infer --video data_test/Stealing009_x264.mp4 --out logs/output.mp4
+```
+
 
 For webcam (default camera):
 

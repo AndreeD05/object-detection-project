@@ -42,9 +42,5 @@ CLOSE_MOSAIC   = 10                         # Epoch to stop mosaic before end
 PROJECT_DIR    = "models"                  # Directory to save training outputs
 
 # Restricted zone polygon (x, y) points
-POLYGON_POINTS = [
-    [435, 1079],
-    [1022, 521],
-    [612, 346],
-    [56, 855]
-]
+ZONE_PATH = "zone.json"
+POLYGON_POINTS = None
