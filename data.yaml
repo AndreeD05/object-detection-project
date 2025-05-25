@@ -1,0 +1,5 @@
+path: D:\HK620242025\DeepLearning_ThayBao\Object_Detection_People\Data\dataset
+train: images/train
+val: images/val
+names:
+  0: person
