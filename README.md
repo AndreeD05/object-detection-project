@@ -103,12 +103,13 @@ pip install -r requirements.txt
    └── labels/val
    ```
 4. Cấu trúc trong data.yaml
-path: data/person-3
-train: images/train    # <-- chuỗi, không phải list
-val:   images/val      # <-- chuỗi
-names:
-  0: person
-
+   ```text
+   path: data/person-3
+   train: images/train    # <-- chuỗi, không phải list
+   val:   images/val      # <-- chuỗi
+   names:
+      0: person
+   ```
 
 5. Chạy Bằng GPU
 ```bash
