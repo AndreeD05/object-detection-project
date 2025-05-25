@@ -1,3 +1,5 @@
+#các hàm hỗ trợ (prep dataset, split, sinh data.yaml)
+
 import os, glob, random, shutil, yaml
 from src.config import DATA_ROOT, SPLIT_RATIO
 from playsound import playsound
@@ -76,38 +78,52 @@ def load_zone(path="zone.json"):
 
 def prepare_dataset():
     """
-    - Giải nén dataset nếu cần (bỏ cell unzip)
-    - Chia images/ và labels/ thành train/ val/
-    - Sinh file data.yaml
+    Hỗ trợ 2 kiểu cấu trúc dữ liệu:
+      1) cổ điển: DATA_ROOT/images + DATA_ROOT/labels
+      2) mới:       DATA_ROOT/train/images + DATA_ROOT/train/label
+    Sau đó chia ngẫu nhiên thành train/val và sinh data.yaml.
     """
-    img_dir = os.path.join(DATA_ROOT, "images")
-    lbl_dir = os.path.join(DATA_ROOT, "labels")
-    # Tạo folder con
-    for sub in ("train","val"):
-        os.makedirs(os.path.join(img_dir, sub), exist_ok=True)
-        os.makedirs(os.path.join(lbl_dir, sub), exist_ok=True)
+    # --- 1. Xác định thư mục ảnh và nhãn gốc ---
+    if os.path.isdir(os.path.join(DATA_ROOT, "train", "images")):
+        img_dir = os.path.join(DATA_ROOT, "train", "images")
+        lbl_dir = os.path.join(DATA_ROOT, "train", "label")   # hoặc "labels" tùy bạn đặt
+    else:
+        img_dir = os.path.join(DATA_ROOT, "images")
+        lbl_dir = os.path.join(DATA_ROOT, "labels")
 
-    # Lấy tất cả ảnh (jpg, png)
+    # --- 2. Tạo thư mục đích cho train/val ---
+    for sub in ("train", "val"):
+        os.makedirs(os.path.join(DATA_ROOT, "images", sub), exist_ok=True)
+        os.makedirs(os.path.join(DATA_ROOT, "labels", sub), exist_ok=True)
+
+    # --- 3. Lấy list tất cả ảnh trong img_dir ---
     imgs = glob.glob(os.path.join(img_dir, "*.jpg")) + glob.glob(os.path.join(img_dir, "*.png"))
-    random.seed(0); random.shuffle(imgs)
-    split = int(len(imgs) * (1 - SPLIT_RATIO))
-    train, val = imgs[:split], imgs[split:]
+    if not imgs:
+        raise RuntimeError(f"Không tìm thấy ảnh trong {img_dir}")
 
-    def _mv(lst, sub):
-        for path in lst:
-            fn  = os.path.basename(path)
-            ext = os.path.splitext(fn)[1]
-            # move ảnh
-            shutil.move(path, os.path.join(img_dir, sub, fn))
-            # move nhãn nếu có
-            lbl = os.path.join(lbl_dir, fn.replace(ext, ".txt"))
-            if os.path.exists(lbl):
-                shutil.move(lbl, os.path.join(lbl_dir, sub, os.path.basename(lbl)))
+    random.seed(0)
+    random.shuffle(imgs)
+    split_idx = int(len(imgs) * (1 - SPLIT_RATIO))
+    train_imgs, val_imgs = imgs[:split_idx], imgs[split_idx:]
 
-    _mv(train, "train")
-    _mv(val,   "val")
+    # --- 4. Di chuyển (hoặc copy) ảnh & nhãn vào đúng folder ---
+    def _move_list(img_list, sub):
+        for img_path in img_list:
+            fname = os.path.basename(img_path)
+            name, ext = os.path.splitext(fname)
+            # ảnh
+            dst_img = os.path.join(DATA_ROOT, "images", sub, fname)
+            shutil.move(img_path, dst_img)
+            # nhãn
+            src_lbl = os.path.join(lbl_dir, name + ".txt")
+            if os.path.exists(src_lbl):
+                dst_lbl = os.path.join(DATA_ROOT, "labels", sub, name + ".txt")
+                shutil.move(src_lbl, dst_lbl)
 
-    # Sinh data.yaml
+    _move_list(train_imgs, "train")
+    _move_list(val_imgs,   "val")
+
+    # --- 5. Sinh data.yaml ---
     cfg = {
         "path": DATA_ROOT,
         "train": "images/train",
@@ -117,6 +133,3 @@ def prepare_dataset():
     with open(os.path.join(DATA_ROOT, "data.yaml"), "w") as f:
         yaml.dump(cfg, f)
     print(f"Dataset prepared under {DATA_ROOT} (train/val, data.yaml).")
-
-if __name__ == "__main__":
-    prepare_dataset()

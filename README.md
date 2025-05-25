@@ -14,31 +14,32 @@
 
 ## 🔍 Features
 
-- **Real-time inference** on video files or webcam stream
-- **Customizable restricted zone** via polygon coordinates
-- **Automated dataset preparation**: 80/20 train-val split & `data.yaml` generation
-- **Configurable training** with data augmentation and hyperparameters
-- **Audio and visual alerts** when intruder detected
-- **Comprehensive logging**: CSV logs and snapshot images saved to `logs/`
-- **Modular structure** for easy maintenance and extension
-
+- **Phát hiện thời gian thực** trên video hoặc luồng webcam  
+- **Tùy chỉnh vùng cấm** qua tọa độ đa giác  
+- **Dataset tự động chuẩn bị**: chia train-val 80/20 & sinh `data.yaml`  
+- **Cấu hình huấn luyện linh hoạt** với data augmentation và siêu tham số  
+- **Cảnh báo âm thanh & hình ảnh** khi phát hiện xâm nhập  
+- **Ghi log chi tiết**: lưu CSV logs và ảnh chụp tại `logs/`  
+- **Kiến trúc mô-đun** dễ mở rộng và bảo trì  
 ---
 
 ## 📂 Project Structure
 
 ```
 your-project/
-├── models/             # Trained weights (best.pt)
-├── data/               # Raw data & prepared dataset│   └── dataset/
-│       ├── images/     # images/train + images/val
-│       └── labels/     # labels/train + labels/val
-├── src/                # Source code modules
-│   ├── config.py       # Paths and hyperparameters
-│   ├── utils.py        # Dataset prep & YAML generation
-│   └── infer.py        # Inference & alert logic
-├── logs/               # CSV logs and snapshots
-├── requirements.txt    # Python dependencies
-├── README.md           # Project guide
+├── models/ # Trained weights (best.pt)
+├── data/ # Raw + prepared dataset
+│ └── dataset/
+│ ├── images/ # images/train + images/val
+│ └── labels/ # labels/train + labels/val
+├── src/ # Source code
+│ ├── config.py # Đường dẫn & siêu tham số
+│ ├── utils.py # Dataset prep & YAML generation
+│ ├── train.py # Script huấn luyện
+│ └── infer.py # Inference & alert logic
+├── logs/ # CSV logs & ảnh snapshot
+├── requirements.txt # Thư viện Python
+├── README.md # Hướng dẫn dự án
 └── .gitignore
 ```
 
@@ -65,7 +66,7 @@ python -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 .\.venv\Scripts\Activate.ps1  # Windows
 
-#Nếu .\.venv\Scripts\Activate.ps1
+#Nếu .\.venv\Scripts\Activate.ps1 bị lỗi
 #Mở PowerShell với quyền Administrator và thay đổi chính sách tạm thời
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 
@@ -86,14 +87,14 @@ pip install -r requirements.txt
 <<<<<<< HEAD
 ---
 
-## 🗂 Dataset Preparation
+## 🗂  Chuẩn Bị Dataset
 
-1. Place raw images in `data/dataset/images/` and corresponding `.txt` labels in `data/dataset/labels/`.
-2. Run dataset prep script to split and generate `data.yaml`:
+1. Đặt ảnh gốc vào `data/dataset/images/` và nhãn `.txt` vào `data/dataset/labels/`.
+2. Chạy script `data.yaml`:
    ```bash
    python -c "from src.utils import prepare_dataset; prepare_dataset()"
    ```
-3. Confirm structure:
+3. Xác nhận cấu trúc:
    ```text
    data/dataset/
    ├── images/train
@@ -101,10 +102,25 @@ pip install -r requirements.txt
    ├── labels/train
    └── labels/val
    ```
+4. Cấu trúc trong data.yaml
+path: data/person-3
+train: images/train    # <-- chuỗi, không phải list
+val:   images/val      # <-- chuỗi
+names:
+  0: person
 
+
+5. Chạy Bằng GPU
+```bash
+   pip uninstall torch torchvision torchaudio
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
 ---
 
-## 🏋️‍♂️ Training
+
+
+
+## 🏋️‍♂️ Huấn Luyện
 
 Train with YOLOv8:
 
@@ -114,46 +130,47 @@ Run training using the script in `src/train.py` with configuration from `src/con
 python -m src.train
 ```
 
-- Best weights saved at `models/custom_train/weights/best.pt`.
+- Weights tốt nhất lưu tại `models/custom_train/weights/best.pt`.
 
 ---
 =======
 
-## 🎥 Inference & Alerts
+## 🎥 Inference & Cảnh Báo
 
 <<<<<<< HEAD
 Run detection on a video or webcam:
 
+1. Chọn vùng cấm:
 ```bash
 python -m src.select_zone --video data_test/Stealing009_x264.mp4 --out zone.json
 ```
-
+2. Chạy phát hiện:
 Sau khi xác nhận zone.json đúng, bạn chạy:
 ```bash
 python -m src.infer --video data_test/Stealing009_x264.mp4 --out logs/output.mp4
 ```
 
 
-For webcam (default camera):
+3. Webcam (camera 0):
 
 ```bash
 python src/infer.py --video 0 --out logs/webcam.mp4
 ```
 
-- Alerts logged in `logs/` with snapshots and CSV.
+- Cảnh báo và ảnh snapshot được lưu trong logs/, cùng file CSV log.
 
 ---
 
-## ⚙️ Configuration
+## ⚙️  Cấu Hình
 
-Adjust parameters in `src/config.py`:
+Chỉnh trong `src/config.py`:
 
-- `POLYGON_POINTS`: Coordinates of restricted zone polygon
+- `POLYGON_POINTS`: Tọa độ đa giác vùng cấm
 - `DATA_ROOT`, `EPOCHS`, `BATCH_SIZE`, `IMG_SIZE`, `LEARNING_RATE`, etc.
 
 ---
 
-## 🛠️ Extending the Project
+## 🛠️ Tinh Chỉnh & Mở Rộng
 
 - Integrate Telegram/Zalo notifications
 - Convert model to ONNX/TensorRT for edge deployment

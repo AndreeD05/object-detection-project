@@ -1,3 +1,4 @@
+#script inference + logic vùng cấm
 from ultralytics import YOLO
 import cv2, numpy as np
 from src.config import WEIGHTS_PATH, POLYGON_POINTS, ZONE_PATH
