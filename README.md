@@ -125,6 +125,7 @@ python -m src.train
 Run detection on a video or webcam:
 
 ```bash
+<<<<<<< HEAD
 python -m src.select_zone --video data_test/Stealing009_x264.mp4 --out zone.json
 ```
 
@@ -134,6 +135,11 @@ python -m src.infer --video data_test/Stealing009_x264.mp4 --out logs/output.mp4
 ```
 
 
+=======
+python src/infer.py   --video path/to/input.mp4   --out logs/output.mp4
+```
+
+>>>>>>> 1a416e67a02ce198a808b892800855958cc743de
 For webcam (default camera):
 
 ```bash
