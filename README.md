@@ -128,7 +128,7 @@ Train with YOLOv8:
 Run training using the script in `src/train.py` with configuration from `src/config.py`:
 
 ```bash
-python -m src.train
+python -m src.train --data_yaml data\person-3\data.yaml --model yolov8n.pt --name custom_train
 ```
 
 - Weights tốt nhất lưu tại `models/custom_train/weights/best.pt`.
