@@ -78,25 +78,49 @@ def load_zone(path="zone.json"):
 
 def prepare_dataset():
     """
-    Hỗ trợ 2 kiểu cấu trúc dữ liệu:
-      1) cổ điển: DATA_ROOT/images + DATA_ROOT/labels
-      2) mới:       DATA_ROOT/train/images + DATA_ROOT/train/label
-    Sau đó chia ngẫu nhiên thành train/val và sinh data.yaml.
+    Hỗ trợ 3 kiểu cấu trúc dữ liệu:
+      A) đã có split sẵn:
+         DATA_ROOT/images/train + DATA_ROOT/images/val
+         DATA_ROOT/labels/train + DATA_ROOT/labels/val
+      B) mới: DATA_ROOT/train/images + DATA_ROOT/train/label
+      C) cổ điển: DATA_ROOT/images + DATA_ROOT/labels
+    Sau đó tạo hoặc chỉ sinh data.yaml.
     """
-    # --- 1. Xác định thư mục ảnh và nhãn gốc ---
+    # 1. Nếu đã split sẵn (A), chỉ sinh data.yaml
+    imgs_train = os.path.join(DATA_ROOT, "images", "train")
+    imgs_val   = os.path.join(DATA_ROOT, "images", "val")
+    lbls_train = os.path.join(DATA_ROOT, "labels", "train")
+    lbls_val   = os.path.join(DATA_ROOT, "labels", "val")
+    if os.path.isdir(imgs_train) and os.path.isdir(imgs_val):
+        print("Detected pre-split dataset under images/train + images/val — only generating data.yaml.")
+        cfg = {
+            "path": DATA_ROOT,
+            "train": "images/train",
+            "val":   "images/val",
+            "nc":    1,
+            "names": {0: "person"}
+        }
+        with open(os.path.join(DATA_ROOT, "data.yaml"), "w") as f:
+            yaml.dump(cfg, f)
+        print(f"data.yaml generated at {DATA_ROOT}/data.yaml")
+        return
+
+    # 2. Kiểm tra kiểu mới (B): DATA_ROOT/train/images
     if os.path.isdir(os.path.join(DATA_ROOT, "train", "images")):
         img_dir = os.path.join(DATA_ROOT, "train", "images")
-        lbl_dir = os.path.join(DATA_ROOT, "train", "label")   # hoặc "labels" tùy bạn đặt
+        lbl_dir = os.path.join(DATA_ROOT, "train", "label")
     else:
+        # 3. Kiểu cổ điển (C)
         img_dir = os.path.join(DATA_ROOT, "images")
         lbl_dir = os.path.join(DATA_ROOT, "labels")
 
-    # --- 2. Tạo thư mục đích cho train/val ---
+    # --- Các bước split và move như cũ --- #
+    # 4. Tạo folder đích
     for sub in ("train", "val"):
         os.makedirs(os.path.join(DATA_ROOT, "images", sub), exist_ok=True)
         os.makedirs(os.path.join(DATA_ROOT, "labels", sub), exist_ok=True)
 
-    # --- 3. Lấy list tất cả ảnh trong img_dir ---
+    # 5. Lấy list ảnh
     imgs = glob.glob(os.path.join(img_dir, "*.jpg")) + glob.glob(os.path.join(img_dir, "*.png"))
     if not imgs:
         raise RuntimeError(f"Không tìm thấy ảnh trong {img_dir}")
@@ -106,28 +130,24 @@ def prepare_dataset():
     split_idx = int(len(imgs) * (1 - SPLIT_RATIO))
     train_imgs, val_imgs = imgs[:split_idx], imgs[split_idx:]
 
-    # --- 4. Di chuyển (hoặc copy) ảnh & nhãn vào đúng folder ---
     def _move_list(img_list, sub):
         for img_path in img_list:
             fname = os.path.basename(img_path)
-            name, ext = os.path.splitext(fname)
-            # ảnh
-            dst_img = os.path.join(DATA_ROOT, "images", sub, fname)
-            shutil.move(img_path, dst_img)
-            # nhãn
+            name, _ = os.path.splitext(fname)
+            shutil.move(img_path, os.path.join(DATA_ROOT, "images", sub, fname))
             src_lbl = os.path.join(lbl_dir, name + ".txt")
             if os.path.exists(src_lbl):
-                dst_lbl = os.path.join(DATA_ROOT, "labels", sub, name + ".txt")
-                shutil.move(src_lbl, dst_lbl)
+                shutil.move(src_lbl, os.path.join(DATA_ROOT, "labels", sub, name + ".txt"))
 
     _move_list(train_imgs, "train")
     _move_list(val_imgs,   "val")
 
-    # --- 5. Sinh data.yaml ---
+    # 6. Sinh data.yaml
     cfg = {
         "path": DATA_ROOT,
         "train": "images/train",
         "val":   "images/val",
+        "nc":    1,
         "names": {0: "person"}
     }
     with open(os.path.join(DATA_ROOT, "data.yaml"), "w") as f:
