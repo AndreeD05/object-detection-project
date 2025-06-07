@@ -6,7 +6,7 @@ MODEL_NAME     = "yolov8n.pt"       # Tên model được pretrained (có thể 
 WEIGHTS_PATH   = "models/best.pt"   # Đường dẫn lưu weights tốt nhất sau huấn luyện
 
 # Cấu hình dataset
-SOURCE_ROOT    = "data/dataset"      # ← Nơi chứa dữ liệu gốc (đã chia)
+SOURCE_ROOT    = "data/dataset"      # ← Nơi chứa dữ liệu gốc 
 DATA_ROOT      = "data/person-3"             # Thư mục gốc chứa dữ liệu images/ và labels/
 DATA_YAML      = f"{DATA_ROOT}/data.yaml"   # Đường dẫn tới file YAML định nghĩa train/val
 SPLIT_RATIO    = 0.2                          # Tỷ lệ validation (20%) và training (80%)
