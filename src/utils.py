@@ -1,15 +1,12 @@
-#các hàm hỗ trợ (prep dataset, split, sinh data.yaml)
-
 import os, glob, random, shutil, yaml
-from src.config import DATA_ROOT, SPLIT_RATIO
+from src.config import DATA_ROOT, SPLIT_RATIO, SOURCE_ROOT
 from playsound import playsound
 import threading
 import csv
 from datetime import datetime
-import cv2, json, os
+import cv2, json
 
 LOG_CSV = "logs/violations.csv"
-
 
 def init_log():
     os.makedirs(os.path.dirname(LOG_CSV), exist_ok=True)
@@ -23,16 +20,10 @@ def log_violation(x, y, confidence):
         writer = csv.writer(f)
         writer.writerow([datetime.now().isoformat(), x, y, f"{confidence:.2f}"])
 
-# src/utils.py (phần trên cùng)
 def play_alert_sound(mp3_path="alert.mp3"):
-    """Phát âm thanh báo động không block quá trình xử lý."""
     threading.Thread(target=lambda: playsound(mp3_path, block=False), daemon=True).start()
 
 def select_zone_from_video(video_path, save_path="zone.json"):
-    """
-    Mở video, lấy frame đầu tiên, cho phép click chọn polygon,
-    nhấn 's' để lưu (các điểm sẽ được lưu vào JSON), 'q' để hủy.
-    """
     cap = cv2.VideoCapture(video_path)
     ret, frame = cap.read()
     cap.release()
@@ -51,8 +42,7 @@ def select_zone_from_video(video_path, save_path="zone.json"):
             cv2.imshow(win, temp)
 
     cv2.setMouseCallback(win, on_mouse)
-    print("Click để chọn các điểm vùng cấm (ít nhất 3 điểm).")
-    print("Nhấn 's' để lưu, 'q' để thoát không lưu.")
+    print("Click để chọn các điểm vùng cấm (ít nhất 3 điểm). Nhấn 's' để lưu, 'q' để hủy.")
 
     while True:
         cv2.imshow(win, temp)
@@ -71,78 +61,42 @@ def select_zone_from_video(video_path, save_path="zone.json"):
     return pts
 
 def load_zone(path="zone.json"):
-    """Đọc polygon từ file JSON"""
     with open(path, "r") as f:
-        pts = json.load(f)
-    return pts
+        return json.load(f)
 
 def prepare_dataset():
     """
-    Hỗ trợ 3 kiểu cấu trúc dữ liệu:
-      A) đã có split sẵn:
-         DATA_ROOT/images/train + DATA_ROOT/images/val
-         DATA_ROOT/labels/train + DATA_ROOT/labels/val
-      B) mới: DATA_ROOT/train/images + DATA_ROOT/train/label
-      C) cổ điển: DATA_ROOT/images + DATA_ROOT/labels
-    Sau đó tạo hoặc chỉ sinh data.yaml.
+    Copy dữ liệu đã chia từ SOURCE_ROOT → DATA_ROOT (images/train, val + labels/train, val)
+    và sinh file data.yaml.
     """
-    # 1. Nếu đã split sẵn (A), chỉ sinh data.yaml
-    imgs_train = os.path.join(DATA_ROOT, "images", "train")
-    imgs_val   = os.path.join(DATA_ROOT, "images", "val")
-    lbls_train = os.path.join(DATA_ROOT, "labels", "train")
-    lbls_val   = os.path.join(DATA_ROOT, "labels", "val")
-    if os.path.isdir(imgs_train) and os.path.isdir(imgs_val):
-        print("Detected pre-split dataset under images/train + images/val — only generating data.yaml.")
-        cfg = {
-            "path": DATA_ROOT,
-            "train": "images/train",
-            "val":   "images/val",
-            "nc":    1,
-            "names": {0: "person"}
-        }
-        with open(os.path.join(DATA_ROOT, "data.yaml"), "w") as f:
-            yaml.dump(cfg, f)
-        print(f"data.yaml generated at {DATA_ROOT}/data.yaml")
-        return
+    print(f"Copy dữ liệu từ {SOURCE_ROOT} → {DATA_ROOT}...")
 
-    # 2. Kiểm tra kiểu mới (B): DATA_ROOT/train/images
-    if os.path.isdir(os.path.join(DATA_ROOT, "train", "images")):
-        img_dir = os.path.join(DATA_ROOT, "train", "images")
-        lbl_dir = os.path.join(DATA_ROOT, "train", "label")
-    else:
-        # 3. Kiểu cổ điển (C)
-        img_dir = os.path.join(DATA_ROOT, "images")
-        lbl_dir = os.path.join(DATA_ROOT, "labels")
+    src_img_train = os.path.join(SOURCE_ROOT, "images", "train")
+    src_img_val   = os.path.join(SOURCE_ROOT, "images", "val")
+    src_lbl_train = os.path.join(SOURCE_ROOT, "labels", "train")
+    src_lbl_val   = os.path.join(SOURCE_ROOT, "labels", "val")
 
-    # --- Các bước split và move như cũ --- #
-    # 4. Tạo folder đích
-    for sub in ("train", "val"):
-        os.makedirs(os.path.join(DATA_ROOT, "images", sub), exist_ok=True)
-        os.makedirs(os.path.join(DATA_ROOT, "labels", sub), exist_ok=True)
+    # Kiểm tra tồn tại thư mục nguồn
+    for p in [src_img_train, src_img_val, src_lbl_train, src_lbl_val]:
+        if not os.path.isdir(p):
+            raise RuntimeError(f"Thiếu thư mục: {p}")
 
-    # 5. Lấy list ảnh
-    imgs = glob.glob(os.path.join(img_dir, "*.jpg")) + glob.glob(os.path.join(img_dir, "*.png"))
-    if not imgs:
-        raise RuntimeError(f"Không tìm thấy ảnh trong {img_dir}")
+    # Tạo thư mục đích
+    for sub in ["images/train", "images/val", "labels/train", "labels/val"]:
+        os.makedirs(os.path.join(DATA_ROOT, sub), exist_ok=True)
 
-    random.seed(0)
-    random.shuffle(imgs)
-    split_idx = int(len(imgs) * (1 - SPLIT_RATIO))
-    train_imgs, val_imgs = imgs[:split_idx], imgs[split_idx:]
+    def copy_files(src_dir, dst_dir, exts):
+        for ext in exts:
+            for file in glob.glob(os.path.join(src_dir, f"*.{ext}")):
+                shutil.copy(file, os.path.join(dst_dir, os.path.basename(file)))
 
-    def _move_list(img_list, sub):
-        for img_path in img_list:
-            fname = os.path.basename(img_path)
-            name, _ = os.path.splitext(fname)
-            shutil.move(img_path, os.path.join(DATA_ROOT, "images", sub, fname))
-            src_lbl = os.path.join(lbl_dir, name + ".txt")
-            if os.path.exists(src_lbl):
-                shutil.move(src_lbl, os.path.join(DATA_ROOT, "labels", sub, name + ".txt"))
+    # Copy ảnh và nhãn
+    copy_files(src_img_train, os.path.join(DATA_ROOT, "images/train"), ["jpg", "png"])
+    copy_files(src_img_val,   os.path.join(DATA_ROOT, "images/val"),   ["jpg", "png"])
+    copy_files(src_lbl_train, os.path.join(DATA_ROOT, "labels/train"), ["txt"])
+    copy_files(src_lbl_val,   os.path.join(DATA_ROOT, "labels/val"),   ["txt"])
 
-    _move_list(train_imgs, "train")
-    _move_list(val_imgs,   "val")
-
-    # 6. Sinh data.yaml
+    # Sinh data.yaml
     cfg = {
         "path": DATA_ROOT,
         "train": "images/train",
@@ -152,4 +106,4 @@ def prepare_dataset():
     }
     with open(os.path.join(DATA_ROOT, "data.yaml"), "w") as f:
         yaml.dump(cfg, f)
-    print(f"Dataset prepared under {DATA_ROOT} (train/val, data.yaml).")
+    print(f"✅ Dataset đã chuẩn bị xong tại {DATA_ROOT}. File data.yaml đã được tạo.")
