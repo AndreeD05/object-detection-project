@@ -106,4 +106,4 @@ def prepare_dataset():
     }
     with open(os.path.join(DATA_ROOT, "data.yaml"), "w") as f:
         yaml.dump(cfg, f)
-    print(f"✅ Dataset đã chuẩn bị xong tại {DATA_ROOT}. File data.yaml đã được tạo.")
+    print(f"Dataset đã chuẩn bị xong tại {DATA_ROOT}. File data.yaml đã được tạo.")
