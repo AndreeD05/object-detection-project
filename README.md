@@ -153,9 +153,11 @@ python -m src.infer --video data_test/Stealing009_x264.mp4 --out logs/output.mp4
 
 
 3. Webcam (camera 0):
-
 ```bash
-python src/infer.py --video 0 --out logs/webcam.mp4
+python -c "from src.utils import select_zone_from_video; select_zone_from_video(0, 'zone.json')"
+```
+```bash
+python -m src.infer --video 0 --out logs/webcam.mp4
 ```
 
 - Cảnh báo và ảnh snapshot được lưu trong logs/, cùng file CSV log.

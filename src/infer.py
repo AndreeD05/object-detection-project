@@ -1,16 +1,32 @@
-#script inference + logic vùng cấm
+# script inference + logic vùng cấm
 from ultralytics import YOLO
 import cv2, numpy as np
 from src.config import WEIGHTS_PATH, POLYGON_POINTS, ZONE_PATH
-import os
+import os, time
 from src.utils import play_alert_sound, init_log, log_violation, load_zone
 
 def run_inference(video_path, output_path="output.mp4"):
     init_log()
-     # Load polygon từ JSON
+
+    # Load polygon từ JSON
     POLYGON_POINTS = load_zone(ZONE_PATH)
     original_polygon = np.array(POLYGON_POINTS, dtype=np.float32)
-    cap = cv2.VideoCapture(video_path)
+
+    # Nếu là webcam (video_path là số), dùng backend DSHOW + delay khởi động
+    if str(video_path).isdigit():
+        cam_id = int(video_path)
+        print(f"🎥 Đang mở webcam ID {cam_id}...")
+        cap = cv2.VideoCapture(cam_id, cv2.CAP_DSHOW)
+        time.sleep(2)  # Chờ camera khởi động
+    else:
+        cap = cv2.VideoCapture(video_path)
+
+    # Kiểm tra mở được không
+    ret, first = cap.read()
+    if not ret or first is None:
+        print("❌ Không đọc được frame đầu từ webcam hoặc video. Kiểm tra đường dẫn hoặc ID camera.")
+        return
+
     fps = cap.get(cv2.CAP_PROP_FPS) or 25
     w   = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     h   = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -21,13 +37,10 @@ def run_inference(video_path, output_path="output.mp4"):
     model = YOLO(WEIGHTS_PATH)
     original_polygon = np.array(POLYGON_POINTS, dtype=np.float32)
 
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    ret, first = cap.read()
     prev_gray = cv2.cvtColor(first, cv2.COLOR_BGR2GRAY)
     orb = cv2.ORB_create(500)
     bf  = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     while True:
         ret, frame = cap.read()
         if not ret: break
@@ -48,12 +61,10 @@ def run_inference(video_path, output_path="output.mp4"):
                     poly = cv2.transform(poly[None,:,:], M)[0]
 
         intruded = False
-        # run detection
         for r in model(frame):
             for b in r.boxes.data:
                 x1,y1,x2,y2,conf,cls = b.tolist()
                 if int(cls)==0:
-                    # always draw label
                     label = f"person {conf:.2f}"
                     cv2.putText(frame, label, (int(x1), int(y1)-10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,255,255), 2)
@@ -75,18 +86,15 @@ def run_inference(video_path, output_path="output.mp4"):
                                   (int(x2),int(y2)),
                                   color, 2)
 
-        # draw restricted-zone polygon
         cv2.polylines(frame,
                       [poly.astype(np.int32)],
                       isClosed=True,
                       color=(0,0,255) if intruded else (255,0,0),
                       thickness=3)
-        
-        # --- Hiển thị live và phát âm thanh theo playsound() đã gọi bên trên ---
+
         cv2.imshow("Detection", frame)
-        # Nhấn ESC (27) để dừng sớm
         if cv2.waitKey(1) & 0xFF == 27:
-                break
+            break
 
         out.write(frame)
         prev_gray = curr_gray
