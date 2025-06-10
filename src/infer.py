@@ -1,4 +1,3 @@
-# script inference + logic vùng cấm
 from ultralytics import YOLO
 import cv2, numpy as np
 from src.config import WEIGHTS_PATH, POLYGON_POINTS, ZONE_PATH
@@ -12,84 +11,80 @@ def run_inference(video_path, output_path="output.mp4"):
     POLYGON_POINTS = load_zone(ZONE_PATH)
     original_polygon = np.array(POLYGON_POINTS, dtype=np.float32)
 
-    # Nếu là webcam (video_path là số), dùng backend DSHOW + delay khởi động
+    # Mở webcam hoặc video file
     if str(video_path).isdigit():
-        cam_id = int(video_path)
-        print(f"🎥 Đang mở webcam ID {cam_id}...")
-        cap = cv2.VideoCapture(cam_id, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(int(video_path), cv2.CAP_DSHOW)
+        print("🔁 Đang mở webcam, vui lòng đợi...")
         time.sleep(2)  # Chờ camera khởi động
     else:
         cap = cv2.VideoCapture(video_path)
 
-    # Kiểm tra mở được không
     ret, first = cap.read()
     if not ret or first is None:
-        print("❌ Không đọc được frame đầu từ webcam hoặc video. Kiểm tra đường dẫn hoặc ID camera.")
+        print("❌ Không đọc được frame đầu tiên. Hãy kiểm tra camera ID hoặc file video.")
+        cap.release()
         return
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 25
-    w   = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h   = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     out = cv2.VideoWriter(output_path,
                           cv2.VideoWriter_fourcc(*'mp4v'),
-                          fps, (w,h))
+                          fps, (w, h))
 
     model = YOLO(WEIGHTS_PATH)
     original_polygon = np.array(POLYGON_POINTS, dtype=np.float32)
 
     prev_gray = cv2.cvtColor(first, cv2.COLOR_BGR2GRAY)
     orb = cv2.ORB_create(500)
-    bf  = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
     while True:
         ret, frame = cap.read()
-        if not ret: break
+        if not ret:
+            break
         curr_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # estimate affine transform for polygon
         kp1, des1 = orb.detectAndCompute(prev_gray, None)
         kp2, des2 = orb.detectAndCompute(curr_gray, None)
         poly = original_polygon.copy()
-        if des1 is not None and des2 is not None and len(kp1)>=4 and len(kp2)>=4:
+        if des1 is not None and des2 is not None and len(kp1) >= 4 and len(kp2) >= 4:
             m = bf.match(des1, des2)
-            m = sorted(m, key=lambda x:x.distance)[:50]
-            if len(m)>=4:
-                src = np.float32([kp1[mm.queryIdx].pt for mm in m]).reshape(-1,1,2)
-                dst = np.float32([kp2[mm.trainIdx].pt for mm in m]).reshape(-1,1,2)
+            m = sorted(m, key=lambda x: x.distance)[:50]
+            if len(m) >= 4:
+                src = np.float32([kp1[mm.queryIdx].pt for mm in m]).reshape(-1, 1, 2)
+                dst = np.float32([kp2[mm.trainIdx].pt for mm in m]).reshape(-1, 1, 2)
                 M, _ = cv2.estimateAffinePartial2D(src, dst)
                 if M is not None:
-                    poly = cv2.transform(poly[None,:,:], M)[0]
+                    poly = cv2.transform(poly[None, :, :], M)[0]
 
         intruded = False
         for r in model(frame):
             for b in r.boxes.data:
-                x1,y1,x2,y2,conf,cls = b.tolist()
-                if int(cls)==0:
+                x1, y1, x2, y2, conf, cls = b.tolist()
+                if int(cls) == 0:
                     label = f"person {conf:.2f}"
-                    cv2.putText(frame, label, (int(x1), int(y1)-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,255,255), 2)
+                    cv2.putText(frame, label, (int(x1), int(y1) - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-                    foot = (int((x1+x2)/2), int(y2))
-                    inside = cv2.pointPolygonTest(poly.astype(np.int32),
-                                                  foot, False)
-                    color = (0,0,255) if inside>=0 else (0,255,0)
+                    foot = (int((x1 + x2) / 2), int(y2))
+                    inside = cv2.pointPolygonTest(poly.astype(np.int32), foot, False)
+                    color = (0, 0, 255) if inside >= 0 else (0, 255, 0)
                     if inside >= 0:
                         intruded = True
                         play_alert_sound("alert.mp3")
                         log_violation(foot[0], foot[1], conf)
                         cv2.putText(frame, "Intruder!",
-                                    (int(x1), int(y2)+25),
+                                    (int(x1), int(y2) + 25),
                                     cv2.FONT_HERSHEY_SIMPLEX,
-                                    0.9, (0,0,255), 2)
-                    cv2.rectangle(frame,
-                                  (int(x1),int(y1)),
-                                  (int(x2),int(y2)),
-                                  color, 2)
+                                    0.9, (0, 0, 255), 2)
+                    cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
 
         cv2.polylines(frame,
                       [poly.astype(np.int32)],
                       isClosed=True,
-                      color=(0,0,255) if intruded else (255,0,0),
+                      color=(0, 0, 255) if intruded else (255, 0, 0),
                       thickness=3)
 
         cv2.imshow("Detection", frame)
